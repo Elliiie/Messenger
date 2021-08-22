@@ -95,7 +95,6 @@ class LoginViewController: UIViewController {
     }
     
     @objc private func loginButtonTapped() {
-        
         emailField.resignFirstResponder()
         passwordField.resignFirstResponder()
         
@@ -104,7 +103,8 @@ class LoginViewController: UIViewController {
             return
         }
         
-        FirebaseAuth.Auth.auth().signIn(withEmail: email, password: password) { result, error in
+        FirebaseAuth.Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
+            guard let self = self else { return }
             guard let result = result, error == nil else {
                 print("Failed to log in")
                 return
@@ -112,6 +112,7 @@ class LoginViewController: UIViewController {
             
             let user = result.user
             print("Logged in: \(user)")
+            self.navigationController?.dismiss(animated: true, completion: nil)
         }
     }
     

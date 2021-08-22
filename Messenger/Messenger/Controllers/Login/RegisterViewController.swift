@@ -30,7 +30,7 @@ class RegisterViewController: UIViewController {
         scrollView.isUserInteractionEnabled = true
         view.addSubview(scrollView)
         
-        imageView.image = UIImage(systemName: "person")
+        imageView.image = UIImage(systemName: "person.circle")
         imageView.tintColor = .gray
         imageView.contentMode = .scaleAspectFit
         imageView.isUserInteractionEnabled = true
@@ -137,8 +137,8 @@ class RegisterViewController: UIViewController {
 
     }
     
-    private func allertUserLogginError() {
-        let alert = UIAlertController(title: "Woops", message: "Please, enter all information to create a new account.", preferredStyle: .alert)
+    private func allertUserLogginError(message: String = "Please, enter all information to create a new account.") {
+        let alert = UIAlertController(title: "Woops", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Dismiss", style: .cancel, handler: nil))
         
         present(alert, animated: true, completion: nil)
@@ -154,16 +154,25 @@ class RegisterViewController: UIViewController {
             allertUserLogginError()
             return
         }
-                
-        FirebaseAuth.Auth.auth().createUser(withEmail: email, password: password) { result, error in
-            guard let result = result, error == nil else {
-                print("Error creating user")
+          
+        DatabaseManager.shared.userExists(with: email, completion: { [weak self] exists in
+            guard let self = self else { return }
+            guard !exists else {
+                self.allertUserLogginError(message: "Looks like a user account for that email address already exists.")
                 return
             }
-            
-            let user = result.user
-            print("Created: \(user)")
-        }
+            FirebaseAuth.Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
+                guard let self = self else { return }
+                guard result != nil, error == nil else {
+                    print("Error creating user")
+                    return
+                }
+                
+                DatabaseManager.shared.insertUser(user: User(firstName: firstName, lastName: lastName, email: email))
+                
+                self.navigationController?.dismiss(animated: true, completion: nil)
+            }
+        })
     }
     
     @objc private func didTapRegister() {
